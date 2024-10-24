@@ -692,6 +692,8 @@ def get_max_gpu_blocks_available(
     num_gpu_blocks = int(
         (total_gpu_memory * gpu_memory_utilization - peak_memory) // cache_block_size
     )
+    assert num_gpu_blocks > 0, f'{gpu_memory_utilization=} is not enough.'
+
     num_gpu_blocks = max(num_gpu_blocks, 0)
     torch.cuda.empty_cache()
     return num_gpu_blocks
@@ -969,7 +971,7 @@ class PagedKVCacheManager:
                 emb_dim // tensor_parallel_size,
                 self.kv_heads,
                 num_layers,
-                0.8,
+                0.96,
                 dtype,
             )
         self.total_num_gpu_blocks = total_num_gpu_blocks
