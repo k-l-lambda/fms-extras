@@ -330,7 +330,7 @@ def __prune_candidates(
 
     # Remove any wrong speculator tokens from best candidate
     next_vals_split, embeds = __get_correct_tokens(next_vals, n_correct, embeds)
-    return next_vals_split, embeds, parent_sequence_ids
+    return next_vals_split, embeds, parent_sequence_ids, n_correct
 
 
 def __extract_decode_output(
@@ -482,6 +482,8 @@ def speculative_generate(
     block_mapping_max = ((max(prompt_lengths) + new_tokens - 1) // 16) + 1
     model_input_lengths = [inp_len] * (input_ids.size(0) * n_candidates)
 
+    n_accepts = []
+
     # perform decode step
     while min(n_gen) < new_tokens:
         n_steps += 1
@@ -522,9 +524,10 @@ def speculative_generate(
             output, unflat_indices, bsize, n_candidates, inp_len
         )
 
-        next_vals_list, embeds, parent_sequence_ids = __prune_candidates(
+        next_vals_list, embeds, parent_sequence_ids, n_correct = __prune_candidates(
             input_ids, next_vals, embeds, kv_cache_manager, child_sequence_ids_list
         )
+        n_accepts.append(n_correct.item())
 
         # Update results
         result = [torch.cat(x, dim=0) for x in zip(result, next_vals_list)]
@@ -539,7 +542,7 @@ def speculative_generate(
     # free final parent sequences from the kv-cache
     kv_cache_manager.free_sequences(parent_sequence_ids, recursive=True)
 
-    return result, n_steps, ttft, (time.time() - start_time)
+    return result, n_steps, ttft, (time.time() - start_time), n_accepts
 
 
 def __create_prefill_mask(

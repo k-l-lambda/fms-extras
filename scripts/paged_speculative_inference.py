@@ -260,7 +260,7 @@ def infer(ids, warmup):
         else model.config.max_pos
     )
     if speculator:
-        result, n_steps, ttft, generated_token_time_out = speculative_generate(
+        result, n_steps, ttft, generated_token_time_out, n_accepts = speculative_generate(
             model,
             ids,
             speculator,
